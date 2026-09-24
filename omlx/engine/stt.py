@@ -650,6 +650,12 @@ class STTEngine(BaseNonStreamingEngine):
                 'Install it with: pip install "omlx[audio]"'
             ) from exc
 
+        # Register oMLX-provided STT architectures (MERaLiON-3) that
+        # mlx-audio does not ship itself.
+        from ..patches.mlx_audio_meralion3 import apply_mlx_audio_meralion3_patch
+
+        apply_mlx_audio_meralion3_patch()
+
         model_name = self._model_name
 
         def _load_sync():

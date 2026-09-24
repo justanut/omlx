@@ -366,6 +366,12 @@ AUDIO_STT_MODEL_TYPES, AUDIO_TTS_MODEL_TYPES, AUDIO_STS_MODEL_TYPES = (
     _build_audio_detection_sets()
 )
 
+# STT families that oMLX implements itself on top of mlx-audio's loader
+# (see omlx/patches/mlx_audio_meralion3). They are absent from mlx-audio's
+# MODEL_REMAPPING, so add them explicitly.
+OMLX_STT_MODEL_TYPES = {"meralion3", "meralion3_asr"}
+AUDIO_STT_MODEL_TYPES = set(AUDIO_STT_MODEL_TYPES) | OMLX_STT_MODEL_TYPES
+
 # Architecture-based detection — these are checked before model_type and
 # are always static because architecture strings are stable identifiers.
 AUDIO_STT_ARCHITECTURES = {
@@ -373,6 +379,11 @@ AUDIO_STT_ARCHITECTURES = {
     "Qwen3ASRForConditionalGeneration",
     "ParakeetForCTC",
     "Qwen2AudioForConditionalGeneration",
+    # MERaLiON-3 ASR (Whisper encoder + Gemma-2 decoder), served through
+    # omlx/patches/mlx_audio_meralion3. Upstream renamed the class on
+    # 2026-06-06; MLX quants made before that keep the old name.
+    "MERaLiON3ForConditionalGeneration",
+    "MERaLiON3ASRForConditionalGeneration",
 }
 
 AUDIO_TTS_ARCHITECTURES = {
