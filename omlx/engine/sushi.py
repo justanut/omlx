@@ -68,6 +68,10 @@ SUSHI_EXPERT_FORMATS = frozenset({"exl3", "stq"})
 # (README "Model support list").
 _MIN_VERSION_BY_TYPE = {"deepseek_v41": (1, 5, 0)}
 _MIN_VERSION_BY_FORMAT = {"stq": (1, 3, 0)}
+# The Sushi that split --prefill-chunk into --prefill-chunk-max (the widest
+# chunk a forward runs) and --prefill-chunk-min (its floor); it also removed
+# --prefix-cache-entries, whose count a model now takes from max_concurrent.
+_SUSHI_SPLIT_PREFILL_CHUNK = (1, 8, 0)
 # The launch flags tuned for Qwen packs (--kv-quant, --mtp-head-kv-quant,
 # context, prefill chunk...). Other architectures refuse some of them
 # (DeepSeek stops on --kv-quant) and get Sushi's own defaults.
@@ -215,6 +219,14 @@ def sushi_min_version(config: dict) -> tuple[int, int, int] | None:
 def _version_tuple(version: str) -> tuple[int, int, int] | None:
     match = re.match(r"(\d+)\.(\d+)\.(\d+)", version or "")
     return tuple(int(x) for x in match.groups()) if match else None
+
+
+def _prefill_chunk_flags(version: str, chunk: int) -> list[str]:
+    """The prefill chunk flag this Sushi understands."""
+    parsed = _version_tuple(version)
+    if parsed is not None and parsed >= _SUSHI_SPLIT_PREFILL_CHUNK:
+        return ["--prefill-chunk-max", str(chunk)]
+    return ["--prefill-chunk", str(chunk)]
 
 
 def sushi_model_type(config: dict) -> str | None:
@@ -477,11 +489,11 @@ class SushiOptions:
     kv_quant: str = "8"
     mtp: bool = True
     mtp_head_kv_quant: bool = True
+    # The widest prefill chunk Sushi runs (--prefill-chunk-max since 1.8.0).
     prefill_chunk: int | None = 2048
     max_tokens: int | None = 64_000
     temperature: float | None = 1.0
     prefix_cache_disk: str | None = "20GB"
-    prefix_cache_entries: int | None = 1
     prefix_cache_mem: str | None = None
     # Stream experts from SSD within this resident budget; None leaves it to
     # Sushi (DeepSeek-V4.1 streams by default on Macs under 192 GB).
@@ -748,7 +760,9 @@ class SushiEngine(SplashEngine):
             if o.ctx_size:
                 command += ["--ctx-size", str(o.ctx_size)]
             if o.prefill_chunk:
-                command += ["--prefill-chunk", str(o.prefill_chunk)]
+                command += _prefill_chunk_flags(
+                    self._target.binary.version, o.prefill_chunk
+                )
             if o.max_tokens:
                 command += ["--max-tokens", str(o.max_tokens)]
             if o.temperature is not None:
@@ -757,8 +771,6 @@ class SushiEngine(SplashEngine):
             command += ["--ssd-budget-gb", f"{o.ssd_budget_gb:g}"]
         if o.prefix_cache_disk:
             command += ["--prefix-cache-disk", o.prefix_cache_disk]
-        if o.prefix_cache_entries:
-            command += ["--prefix-cache-entries", str(o.prefix_cache_entries)]
         if o.prefix_cache_mem:
             command += ["--prefix-cache-mem", o.prefix_cache_mem]
         command += list(o.extra_args)

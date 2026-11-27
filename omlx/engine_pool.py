@@ -2461,7 +2461,6 @@ class EnginePool:
             max_tokens=i.sushi_max_tokens,
             temperature=i.sushi_temperature,
             prefix_cache_disk=i.sushi_prefix_cache_disk or None,
-            prefix_cache_entries=i.sushi_prefix_cache_entries,
             prefix_cache_mem=i.sushi_prefix_cache_mem or None,
             ssd_budget_gb=i.sushi_ssd_budget_gb,
             extra_args=shlex.split(i.sushi_extra_args or ""),

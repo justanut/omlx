@@ -932,7 +932,6 @@ class GlobalSettingsRequest(BaseModel):
     sushi_ctx_size: int | None = None
     sushi_kv_quant: str | None = None
     sushi_prefix_cache_disk: str | None = None
-    sushi_prefix_cache_entries: int | None = None
     sushi_prefix_cache_mem: str | None = None
     sushi_extra_args: str | None = None
     sushi_ssd_budget_gb: float | None = None
@@ -6236,7 +6235,6 @@ async def update_global_settings(
         integrations_changed = True
     for field_name in (
         "sushi_prefix_cache_disk",
-        "sushi_prefix_cache_entries",
         "sushi_prefix_cache_mem",
         "sushi_extra_args",
         "sushi_ssd_budget_gb",

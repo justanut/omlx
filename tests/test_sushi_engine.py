@@ -195,7 +195,8 @@ def test_resolve_target(fake_sushi, sushi_pack, tmp_path):
     assert target is None and "llama" in reason
 
 
-def test_serve_command_matches_recommended_launch(fake_sushi, sushi_pack, tmp_path):
+def test_serve_command_matches_recommended_launch(fake_sushi, sushi_pack, tmp_path, monkeypatch):
+    monkeypatch.setattr(sushi_mod, "_read_version", lambda path, mtime: "1.8.1")
     binary, _ = find_sushi_binary(str(fake_sushi))
     engine = SushiEngine(
         model_name=str(sushi_pack),
@@ -211,16 +212,33 @@ def test_serve_command_matches_recommended_launch(fake_sushi, sushi_pack, tmp_pa
         "--kv-quant 8",
         "--mtp-head-kv-quant",
         "--ctx-size 500000",
-        "--prefill-chunk 2048",
+        "--prefill-chunk-max 2048",
         "--max-tokens 64000",
         "--prefix-cache-disk 20GB",
-        "--prefix-cache-entries 1",
         "--temp 1",
         "--port 4321",
         f"--parent-pid {os.getpid()}",
     ):
         assert flag in joined, flag
     assert "--prefix-cache-mem" not in cmd
+    # Sushi 1.8.0 removed --prefix-cache-entries and split --prefill-chunk.
+    assert "--prefill-chunk" not in cmd
+    assert "--prefix-cache-entries" not in cmd
+
+
+def test_old_sushi_keeps_the_single_prefill_chunk_flag(fake_sushi, sushi_pack, tmp_path):
+    # The fake reports 1.0.0, before the split.
+    binary, _ = find_sushi_binary(str(fake_sushi))
+    engine = SushiEngine(
+        model_name=str(sushi_pack),
+        model_id="beamster/Qwen3.8-Flash-Next-Sushi-4bpw",
+        target=SushiTarget(binary, "qwen4_exp", True),
+        log_dir=tmp_path / "logs",
+        options=SushiOptions(),
+    )
+    cmd = engine._serve_command(4321)
+    assert "--prefill-chunk" in cmd
+    assert "--prefill-chunk-max" not in cmd
 
 
 def test_settings_roundtrip():
@@ -470,7 +488,8 @@ def test_dsv41_launch_skips_qwen_flags(dsv41_pack, fake_sushi, tmp_path):
     )
     cmd = engine._serve_command(4321)
     for refused in ("--kv-quant", "--mtp-head-kv-quant", "--ctx-size", "--mtp",
-                    "--prefill-chunk", "--max-tokens", "--temp"):
+                    "--prefill-chunk", "--prefill-chunk-max", "--max-tokens",
+                    "--temp"):
         assert refused not in cmd, refused
     joined = " ".join(cmd)
     assert "--ssd-budget-gb 96" in joined and "--prefix-cache-disk 20GB" in joined

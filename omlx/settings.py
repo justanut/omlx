@@ -1035,11 +1035,11 @@ class IntegrationSettings:
     sushi_kv_quant: str = "8"  # "8" | "4" | "16" | "off"
     sushi_mtp: bool = True
     sushi_mtp_head_kv_quant: bool = True
+    # The widest prefill chunk Sushi runs (--prefill-chunk-max since 1.8.0).
     sushi_prefill_chunk: int | None = 2048
     sushi_max_tokens: int | None = 64000
     sushi_temperature: float | None = 1.0
     sushi_prefix_cache_disk: str | None = "20GB"
-    sushi_prefix_cache_entries: int | None = 1
     sushi_prefix_cache_mem: str | None = None
     sushi_extra_args: str = ""  # appended to `sushi serve`, shell-quoted
     # --ssd-budget-gb for streamed packs; None = Sushi's own default
@@ -1090,7 +1090,6 @@ class IntegrationSettings:
             "sushi_max_tokens": self.sushi_max_tokens,
             "sushi_temperature": self.sushi_temperature,
             "sushi_prefix_cache_disk": self.sushi_prefix_cache_disk,
-            "sushi_prefix_cache_entries": self.sushi_prefix_cache_entries,
             "sushi_prefix_cache_mem": self.sushi_prefix_cache_mem,
             "sushi_extra_args": self.sushi_extra_args,
             "sushi_ssd_budget_gb": self.sushi_ssd_budget_gb,
@@ -1150,7 +1149,6 @@ class IntegrationSettings:
             sushi_max_tokens=data.get("sushi_max_tokens", 64000),
             sushi_temperature=data.get("sushi_temperature", 1.0),
             sushi_prefix_cache_disk=data.get("sushi_prefix_cache_disk", "20GB"),
-            sushi_prefix_cache_entries=data.get("sushi_prefix_cache_entries", 1),
             sushi_prefix_cache_mem=data.get("sushi_prefix_cache_mem") or None,
             sushi_extra_args=data.get("sushi_extra_args", "") or "",
             sushi_ssd_budget_gb=data.get("sushi_ssd_budget_gb"),
